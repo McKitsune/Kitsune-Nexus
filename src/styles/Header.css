@@ -1,0 +1,102 @@
+/* Header.css */
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 2rem;
+    background-color: #ffffff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.logo h1 {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #000;
+    margin-right: 2rem;
+}
+
+.navbar {
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+}
+
+.navbar ul {
+    display: flex;
+    gap: 1.5rem;
+    list-style-type: none; /* Quita los puntos de la lista */
+    padding: 0.5rem 1.5rem; /* Espaciado alrededor del menú */
+    background-color: #f5f5f5; /* Color de fondo claro para el menú */
+    border-radius: 20px; /* Bordes redondeados */
+    margin: 0;
+}
+
+.navbar ul li {
+    display: flex;
+    align-items: center;
+}
+
+.navbar ul li a {
+    text-decoration: none;
+    color: #333;
+    font-size: 1rem;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+    transition: background 0.3s;
+}
+
+.navbar ul li a:hover {
+    background-color: #e0e0e0;
+}
+
+.user-section {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+/* Íconos de usuario y carrito */
+.icon-button {
+    background-color: #f0f0f0;
+    width: 50PX;
+    height: 50px;
+    border: none;
+    border-radius: 50%;
+    padding: 0.5rem;
+    cursor: pointer;
+    position: relative;
+    font-size: 1.2rem;
+    transition: background-color 0.3s;
+}
+
+.icon-button:hover {
+    background-color: #e0e0e0;
+}
+
+/* Estilo del menú desplegable */
+.dropdown-menu {
+    position: absolute;
+    top: 60px; /* Ajusta según el tamaño del header */
+    right: 10px; /* Ajusta según la posición deseada */
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    width: 150px;
+    padding: 0.5rem 0;
+    z-index: 10;
+}
+
+.dropdown-item {
+    display: block;
+    padding: 0.5rem 1rem;
+    color: #333;
+    text-decoration: none;
+    transition: background-color 0.2s;
+}
+
+.dropdown-item:hover {
+    background-color: #f0f0f0;
+}
