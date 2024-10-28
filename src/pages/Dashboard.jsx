@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import axios from 'axios';
 import '../styles/Dashboard.css';
 
@@ -14,21 +13,36 @@ const Dashboard = () => {
     const [products, setProducts] = useState([]);
     const [message, setMessage] = useState('');
 
-    // Configura el cliente S3 para el navegador
-    const s3Client = new S3Client({
-        region: 'us-east-1', // Cambia a la región correcta si es necesario
-        credentials: {
-            accessKeyId: 'AKIATG6MGYE7XGNZ3ZXK', // Reemplaza con la clave correcta
-            secretAccessKey: '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' // Reemplaza con la clave secreta correcta
-        }
-    });
-
-    const S3_BUCKET = 'knexusproductimg';
-
     useEffect(() => {
         fetchProducts();
     }, []);
 
+    // Función para obtener y subir la imagen a S3 utilizando la URL pre-firmada
+    const uploadImageToS3 = async (file) => {
+        try {
+            // 1. Obtener la URL pre-firmada desde tu API Gateway
+            const response = await axios.get('https://s6q9fdqw8l.execute-api.us-east-1.amazonaws.com/dev/products/images', {
+                params: { fileName: file.name }
+            });
+            const { url } = response.data;
+
+            // 2. Subir el archivo directamente a S3 utilizando la URL pre-firmada
+            await axios.put(url, file, {
+                headers: {
+                    'Content-Type': file.type
+                }
+            });
+
+            // Retornar solo la URL base sin la firma
+            return url.split('?')[0];
+        } catch (error) {
+            console.error("Error al subir la imagen:", error);
+            setMessage('Error al subir la imagen');
+            return null;
+        }
+    };
+
+    // Función para obtener la lista de productos desde la API
     const fetchProducts = async () => {
         try {
             const response = await axios.get('https://s6q9fdqw8l.execute-api.us-east-1.amazonaws.com/dev/products');
@@ -40,6 +54,7 @@ const Dashboard = () => {
         }
     };
 
+    // Maneja los cambios en los inputs del formulario
     const handleChange = (e) => {
         const { name, value, files } = e.target;
         setProduct((prevProduct) => ({
@@ -48,43 +63,28 @@ const Dashboard = () => {
         }));
     };
 
-    const uploadImageToS3 = async (file) => {
-        const params = {
-            Bucket: S3_BUCKET,
-            Key: `${Date.now()}_${file.name}`,
-            Body: file
-        };
-    
-        try {
-            const command = new PutObjectCommand(params);
-            const { Location } = await s3Client.send(command);
-            return Location;
-        } catch (error) {
-            console.error("Error al subir la imagen a S3:", error); // Mostrará el error completo en la consola
-            return null;
-        }
-    };
-    
-
-
+    // Maneja el envío del formulario para crear un nuevo producto
     const handleSubmit = async (e) => {
         e.preventDefault();
 
         try {
+            // Subir imagen y obtener URL
             const imageUrl = await uploadImageToS3(product.imageFile);
             if (!imageUrl) {
                 setMessage('Error al subir la imagen');
                 return;
             }
 
+            // Crear el objeto de datos del producto para enviar al backend
             const productData = {
                 id: product.id,
                 name: product.name,
                 description: product.description,
                 price: parseFloat(product.price),
-                image: imageUrl
+                image: imageUrl // URL de la imagen subida a S3
             };
 
+            // Enviar datos del producto a la base de datos
             await axios.post('https://s6q9fdqw8l.execute-api.us-east-1.amazonaws.com/dev/products', productData, {
                 headers: {
                     'Content-Type': 'application/json'
@@ -123,7 +123,7 @@ const Dashboard = () => {
                 </div>
                 <div className="form-group">
                     <label>Imagen:</label>
-                    <input type="file" name="imageFile" onChange={handleChange} accept="image/*" required />
+                    <input type="file" name="imageFile" onChange={handleChange} accept="image/*"  />
                 </div>
                 <button type="submit" className="submit-button">Crear Producto</button>
             </form>
