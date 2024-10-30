@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import axios from 'axios';
 import '../styles/Dashboard.css';
 
@@ -13,17 +12,6 @@ const Dashboard = () => {
     });
     const [products, setProducts] = useState([]);
     const [message, setMessage] = useState('');
-
-    // Configura el cliente S3 para el navegador
-    const s3Client = new S3Client({
-        region: 'us-east-1', // Cambia a la región correcta si es necesario
-        credentials: {
-            accessKeyId: 'AKIATG6MGYE7XGNZ3ZXK', // Reemplaza con la clave correcta
-            secretAccessKey: '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' // Reemplaza con la clave secreta correcta
-        }
-    });
-
-    const S3_BUCKET = 'knexusproductimg';
 
     useEffect(() => {
         fetchProducts();
@@ -49,23 +37,30 @@ const Dashboard = () => {
     };
 
     const uploadImageToS3 = async (file) => {
-        const params = {
-            Bucket: S3_BUCKET,
-            Key: `${Date.now()}_${file.name}`,
-            Body: file
-        };
-    
         try {
-            const command = new PutObjectCommand(params);
-            const { Location } = await s3Client.send(command);
-            return Location;
+            // Solicita la URL pre-firmada al backend
+            const response = await axios.get('http://localhost:5000/get-s3-url', {
+                params: {
+                    filename: file.name,
+                    filetype: file.type
+                }
+            });
+            const uploadURL = response.data.uploadURL;
+
+            // Sube el archivo a S3 usando la URL pre-firmada
+            await axios.put(uploadURL, file, {
+                headers: {
+                    'Content-Type': file.type
+                }
+            });
+
+            // Retorna la URL de la imagen en S3 (sin la firma)
+            return uploadURL.split('?')[0];
         } catch (error) {
-            console.error("Error al subir la imagen a S3:", error); // Mostrará el error completo en la consola
+            console.error("Error al subir la imagen a S3:", error);
             return null;
         }
     };
-    
-
 
     const handleSubmit = async (e) => {
         e.preventDefault();

@@ -1,13 +1,17 @@
 {
   "name": "shop",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
+  "description": "'''src/ ├── components/ ├── pages/ │ ├── Home/ │ │ ├── Home.jsx │ │ └── Home.css │ ├── Login/ │ │ ├── Login.jsx │ │ └── Login.css │ ├── Profile/ │ │ ├── Profile.jsx │ │ └── Profile.css │ └── Ecommerce/ │ ├── Ecommerce.jsx │ └── Ecommerce.css └── styles/ └── global.css '''",
+  "main": "eslint.config.js",
   "scripts": {
-    "dev": "vite",
+    "dev": "nodemon server.js",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.679.0",
@@ -15,12 +19,21 @@
     "@fortawesome/react-fontawesome": "^0.2.2",
     "aws-sdk": "^2.1691.0",
     "axios": "^1.7.7",
+    "bcrypt": "^5.1.1",
     "bootstrap": "^5.3.3",
+    "cors": "^2.8.5",
     "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "fs": "^0.0.1-security",
+    "jsonwebtoken": "^9.0.2",
+    "mysql2": "^3.11.3",
+    "nodemailer": "^6.9.16",
     "react": "^18.3.1",
     "react-bootstrap": "^2.10.5",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^6.27.0"
+    "react-router-dom": "^6.27.0",
+    "sequelize": "^6.37.5",
+    "sequelize-cli": "^6.6.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",
@@ -32,6 +45,10 @@
     "eslint-plugin-react-hooks": "^5.0.0",
     "eslint-plugin-react-refresh": "^0.4.13",
     "globals": "^15.11.0",
+    "nodemon": "^2.0.15",
     "vite": "^5.4.9"
-  }
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }
