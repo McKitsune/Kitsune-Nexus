@@ -1,23 +1,22 @@
-// server.js - Backend para generar URLs pre-firmadas de S3
-
-const express = require('express');
-const AWS = require('aws-sdk');
-const dotenv = require('dotenv');
-const cors = require('cors');
+import express from 'express';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import dotenv from 'dotenv';
+import cors from 'cors';
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5002;
 
-// Configuración de AWS S3 con credenciales desde el archivo .env
-AWS.config.update({
+const s3 = new S3Client({
     region: 'us-east-1',
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    },
 });
 
-const s3 = new AWS.S3();
 const S3_BUCKET = 'knexusproductimg';
 
 app.use(cors());
@@ -28,13 +27,12 @@ app.get('/get-s3-url', async (req, res) => {
     const params = {
         Bucket: S3_BUCKET,
         Key: `${Date.now()}_${filename}`,
-        Expires: 60, // La URL será válida por 60 segundos
         ContentType: filetype,
     };
 
     try {
-        // Generar la URL pre-firmada para la subida del archivo
-        const uploadURL = await s3.getSignedUrlPromise('putObject', params);
+        const command = new PutObjectCommand(params);
+        const uploadURL = await getSignedUrl(s3, command, { expiresIn: 60 });
         res.json({ uploadURL });
     } catch (error) {
         console.error('Error generando URL pre-firmada:', error);
