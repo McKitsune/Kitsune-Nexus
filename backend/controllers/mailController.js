@@ -1,6 +1,5 @@
 const fs = require("fs");
 const path = require("path");
-
 const nodemailer = require("nodemailer");
 
 const transporter = nodemailer.createTransport({
@@ -11,104 +10,28 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const batchSize = 3;
-const batchDelay = 10000;
+const sendConfirmationEmail = async (req, res) => {
+  const { email, nombre, items, totalAmount, date, time } = req.body;
 
-const htmlFile = path.join(__dirname,'index.html');
-const html = fs.readFileSync(htmlFile, "utf8");
+  const itemsHtml = items.map(item => `<li>${item.nombre} - ${item.cantidad} x ${item.precioUnitario}</li>`).join('');
 
-const sendMasiveMail = async (req, res) => {
-  const { recipients, subject, text } = req.body;
-
-  if (!recipients) {
-    return res.status(400).json({ message: "Recipients are required" });
-  }
-
-  if (!subject) {
-    return res.status(400).json({ message: "Subject is required" });
-  }
-
-  if (!text) {
-    return res.status(400).json({ message: "Text is required" });
-  }
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: "Confirmación de Compra",
+    html: `<h1>Gracias por tu compra, ${nombre}</h1>
+           <p>Resumen de tu compra:</p>
+           <ul>${itemsHtml}</ul>
+           <p>Total: ${totalAmount}</p>
+           <p>Fecha de compra: ${date} a las ${time}</p>`
+  };
 
   try {
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: Array.isArray(recipients) ? recipients : [recipients],
-      subject,
-      text,
-    };
-
     await transporter.sendMail(mailOptions);
-
-    res.status(200).json({ message: "Email sent" });
+    res.status(200).json({ message: "Correo de confirmación enviado" });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: "Error al enviar el correo", details: error.message });
   }
 };
 
-const sendMasiveMailBatch = async (req, res) => {
-  const { recipients, subject, text } = req.body;
-
-  if (!recipients) {
-    return res.status(400).json({ message: "Recipients are required" });
-  }
-
-  if (!subject) {
-    return res.status(400).json({ message: "Subject is required" });
-  }
-
-  if (!text) {
-    return res.status(400).json({ message: "Text is required" });
-  }
-
-  const errors = [];
-  const responsesTransporter = [];
-
-  try {
-    const batches = [];
-
-    for (let i = 0; i < recipients.length; i += batchSize) {
-      batches.push(recipients.slice(i, i + batchSize));
-    }
-
-    for (const batch of batches) {
-      await Promise.all(
-        batch.map(async (recipient) => {
-          const mailOptions = {
-            from: process.env.EMAIL_USER,
-            to: recipient,
-            subject,
-            html,
-          };
-
-          try {
-            let response = await transporter.sendMail(mailOptions);
-            responsesTransporter.push(response);
-            console.log(`enviado el correo a ${recipient}`);
-          } catch (error) {
-            errors.push({ recipient, error: error.message });
-            console.log(
-              `error al enviar el correo a ${recipient}: ${error.message}`
-            );
-          }
-        })
-      );
-
-      await new Promise(resolve => setTimeout(resolve, batchDelay));
-    }
-
-
-    if(errors.length > 0) {
-        res.status(200).json({message: "Mensajes enviados con errores", errors});
-    }else{
-        res.status(200).json({message: "Mensajes enviados", responsesTransporter});
-    }
-
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-module.exports = { sendMasiveMail, sendMasiveMailBatch };
+module.exports = { sendConfirmationEmail };

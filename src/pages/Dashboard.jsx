@@ -10,6 +10,7 @@ const Dashboard = () => {
         name: '',
         description: '',
         price: '',
+        quantity: 0,
         imageFile: null
     });
     const [products, setProducts] = useState([]);
@@ -56,10 +57,15 @@ const Dashboard = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const imageUrl = product.imageFile ? await uploadImageToS3(product.imageFile) : product.image;
-        if (product.imageFile && !imageUrl) {
-            setMessage('Error al subir la imagen');
-            return;
+    
+        // Cargar la URL de la imagen si es necesario
+        let imageUrl = product.image;
+        if (product.imageFile) {
+            imageUrl = await uploadImageToS3(product.imageFile);
+            if (!imageUrl) {
+                setMessage('Error al subir la imagen');
+                return;
+            }
         }
     
         const productData = {
@@ -67,25 +73,43 @@ const Dashboard = () => {
             name: product.name,
             description: product.description,
             price: parseFloat(product.price),
+            stock: parseInt(product.quantity, 10),  // Cambiamos a `stock` para coincidir con el backend
             image: imageUrl
         };
     
         try {
             if (selectedProduct) {
-                await axios.put(`https://s6q9fdqw8l.execute-api.us-east-1.amazonaws.com/dev/products/${product.id}`, productData, {
+                // Actualización de producto existente
+                const response = await axios.put(`https://s6q9fdqw8l.execute-api.us-east-1.amazonaws.com/dev/products/${product.id}`, {
+                    body: JSON.stringify(productData)
+                }, {
                     headers: { 'Content-Type': 'application/json' }
                 });
-                setMessage('Producto actualizado exitosamente');
+    
+                if (response.status === 200) {
+                    setMessage('Producto actualizado exitosamente');
+                } else {
+                    setMessage('Error al actualizar el producto');
+                }
             } else {
-                await axios.post('https://s6q9fdqw8l.execute-api.us-east-1.amazonaws.com/dev/products', productData, {
+                // Creación de nuevo producto
+                const response = await axios.post('https://s6q9fdqw8l.execute-api.us-east-1.amazonaws.com/dev/products', {
+                    body: JSON.stringify(productData)
+                }, {
                     headers: { 'Content-Type': 'application/json' }
                 });
-                setMessage('Producto creado exitosamente');
+    
+                if (response.status === 201) {
+                    setMessage('Producto creado exitosamente');
+                } else {
+                    setMessage('Error al crear el producto');
+                }
             }
-            
-            setProduct({ id: '', name: '', description: '', price: '', imageFile: null });
+    
+            // Resetear el formulario y recargar la lista de productos
+            setProduct({ id: '', name: '', description: '', price: '', quantity: 0, imageFile: null });
             setSelectedProduct(null);
-            fetchProducts(); // Recargar productos después de crear/editar
+            fetchProducts();  // Refrescar la lista de productos
             setShowModal(false);
         } catch (error) {
             setMessage(error.response ? `Error: ${error.response.data.message}` : 'Error de red o servidor');
@@ -93,11 +117,13 @@ const Dashboard = () => {
         }
     };
     
+    
+
     const handleShowModal = () => setShowModal(true);
     const handleCloseModal = () => {
         setShowModal(false);
-        setSelectedProduct(null); // Resetear el producto seleccionado al cerrar el modal
-        setProduct({ id: '', name: '', description: '', price: '', imageFile: null });
+        setSelectedProduct(null);
+        setProduct({ id: '', name: '', description: '', price: '', quantity: 0, imageFile: null });
     };
 
     const handleEdit = (prod) => {
@@ -106,7 +132,8 @@ const Dashboard = () => {
             name: prod.name,
             description: prod.description,
             price: prod.price,
-            imageFile: null 
+            quantity: prod.quantity,
+            imageFile: null
         });
         setSelectedProduct(prod.id);
         setShowModal(true);
@@ -114,20 +141,18 @@ const Dashboard = () => {
 
     const handleDelete = async (productId) => {
         try {
-            await axios.delete(`https://s6q9fdqw8l.execute-api.us-east-1.amazonaws.com/dev/products/${productId}`);
-            setMessage('Producto eliminado exitosamente');
+            const response = await axios.delete(`https://s6q9fdqw8l.execute-api.us-east-1.amazonaws.com/dev/products/${productId}`);
             
-            // Eliminar el producto del estado local para actualizar la lista
-            setProducts(products.filter(prod => prod.id !== productId));
-            
+            if (response.status === 200) {
+                setMessage('Producto eliminado exitosamente');
+                fetchProducts();
+            } else {
+                setMessage('Error al eliminar el producto');
+            }
         } catch (error) {
-            setMessage('Error al eliminar el producto');
             console.error("Error al eliminar el producto:", error);
+            setMessage('Error al eliminar el producto');
         }
-    };
-
-    const handleSelectProduct = (productId) => {
-        setSelectedProduct(productId);
     };
 
     return (
@@ -160,6 +185,10 @@ const Dashboard = () => {
                             <input type="number" name="price" value={product.price} onChange={handleChange} required />
                         </div>
                         <div className="form-group">
+                            <label>Cantidad:</label>
+                            <input type="number" name="quantity" value={product.quantity} onChange={handleChange} required />
+                        </div>
+                        <div className="form-group">
                             <label>Imagen:</label>
                             <input type="file" name="imageFile" onChange={handleChange} accept="image/*" required={!selectedProduct} />
                         </div>
@@ -177,6 +206,7 @@ const Dashboard = () => {
                         <th>Nombre</th>
                         <th>Descripción</th>
                         <th>Precio</th>
+                        <th>Cantidad</th>
                         <th>Imagen</th>
                         <th>Acciones</th>
                     </tr>
@@ -196,6 +226,7 @@ const Dashboard = () => {
                             <td>{prod.name}</td>
                             <td>{prod.description}</td>
                             <td>${prod.price}</td>
+                            <td>{prod.quantity}</td>
                             <td>{prod.image && <img src={prod.image} alt={prod.name} width="50" />}</td>
                             <td>
                                 <FaEdit

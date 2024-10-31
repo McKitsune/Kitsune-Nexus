@@ -1,5 +1,5 @@
-// src/components/Invoice.jsx
 import React, { useContext, useState, useEffect } from 'react';
+import axios from 'axios';
 import { CartContext } from '../context/CartContext';
 import { UserContext } from '../context/UserContext';
 import { Container, Table, Row, Col, Card, Button, Modal } from 'react-bootstrap';
@@ -28,32 +28,47 @@ const Invoice = () => {
         setPreviousPurchases(storedInvoices);
     }, []);
 
-    const handlePaymentClick = () => {
+    const handlePaymentClick = async () => {
         if (!user) {
             setShowModal(true);
             return;
         }
 
         const invoiceData = {
-            items: cartItems,
+            email: user.email,
+            nombre: user.name,
+            items: cartItems.map(item => ({
+                nombre: item.name,
+                cantidad: item.quantity,
+                precioUnitario: item.price,
+                subtotal: item.price * item.quantity
+            })),
             totalQuantity,
             totalAmount,
             date: new Date().toLocaleDateString(),
-            time: new Date().toLocaleTimeString(),
+            time: new Date().toLocaleTimeString()
         };
 
-        // Guardar la factura en localStorage
-        const updatedInvoices = [...previousPurchases, invoiceData];
-        localStorage.setItem('invoices', JSON.stringify(updatedInvoices));
-        setPreviousPurchases(updatedInvoices);
-        clearCart();
-        alert("Pago realizado con éxito.");
+        try {
+            // Enviar la factura al backend para enviar el correo de confirmación
+            await axios.post('http://localhost:5002/api/email/send-confirmation', invoiceData);
+
+            // Guardar la factura en localStorage
+            const updatedInvoices = [...previousPurchases, invoiceData];
+            localStorage.setItem('invoices', JSON.stringify(updatedInvoices));
+            setPreviousPurchases(updatedInvoices);
+
+            clearCart();
+            alert("Pago realizado con éxito y correo de confirmación enviado.");
+        } catch (error) {
+            console.error("Error al enviar la factura:", error);
+            alert("Hubo un error al enviar el correo de confirmación.");
+        }
     };
 
     const handleCloseModal = () => setShowModal(false);
     
     const handlePrintInvoice = (invoice) => {
-        // Lógica para imprimir la factura
         const printWindow = window.open('', '_blank');
         printWindow.document.write(`<pre>${JSON.stringify(invoice, null, 2)}</pre>`);
         printWindow.document.close();
