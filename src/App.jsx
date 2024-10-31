@@ -11,6 +11,7 @@ import AuthProvider from './context/AuthContext';
 import CartProvider from './context/CartContext';
 import PrivateRoute from './components/PrivateRoute';
 import Header from './components/Header';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 function App() {
   return (
