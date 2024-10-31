@@ -1,25 +1,32 @@
-import "./../styles/Profile.css"
-import React from 'react';
-import { Container, Card, Row, Col, Button } from 'react-bootstrap';
-
+// src/pages/Profile.jsx
+import React, { useContext } from "react";
+import { Container, Card, Row, Col, Button } from "react-bootstrap";
+import { UserContext } from "../context/UserContext"; // Asegúrate de que la ruta sea correcta
 
 function Profile() {
+    const { user } = useContext(UserContext); // Obtener datos del contexto
+
+    // Verificar si el usuario existe
+    if (!user) {
+        return <p>No estás conectado. Por favor, inicia sesión.</p>; // Mensaje si no hay usuario
+    }
+
     return (
         <Container className="my-5">
             <Card className="p-4">
                 <Row>
                     <Col md={4} className="text-center">
                         <img
-                            src="https://via.placeholder.com/150"
+                            src={user.profilePicture || "https://via.placeholder.com/150"}
                             alt="Profile"
                             className="rounded-circle"
                             style={{ width: '150px', height: '150px' }}
                         />
                     </Col>
                     <Col md={8}>
-                        <h3>John Doe</h3>
-                        <p>Email: johndoe@example.com</p>
-                        <p>Phone: +123 456 7890</p>
+                        <h3>{user.name}</h3>
+                        <p>Email: {user.email}</p>
+                        <p>Phone: {user.phone}</p>
                         <Button variant="primary" className="mt-3">Edit Profile</Button>
                     </Col>
                 </Row>

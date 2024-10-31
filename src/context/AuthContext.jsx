@@ -1,24 +1,25 @@
+// src/context/AuthContext.jsx
 import React, { createContext, useState } from 'react';
-import AuthService from '../services/AuthService';
 
+// Crear el contexto de autenticación
 export const AuthContext = createContext();
 
+// Componente proveedor de autenticación
 const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
 
-    const login = async (email, password) => {
-        const authenticatedUser = await AuthService.login(email, password);
-        setUser(authenticatedUser);
-        return authenticatedUser !== null;
+    // Función para iniciar sesión (ejemplo básico)
+    const loginUser = (userData) => {
+        setUser(userData);
     };
 
-    const logout = () => {
-        AuthService.logout();
+    // Función para cerrar sesión
+    const logoutUser = () => {
         setUser(null);
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, logout }}>
+        <AuthContext.Provider value={{ user, loginUser, logoutUser }}>
             {children}
         </AuthContext.Provider>
     );

@@ -4,7 +4,6 @@ import { Modal, Button, Table } from 'react-bootstrap';
 import { FaEdit, FaTrashAlt } from 'react-icons/fa';
 import '../styles/Dashboard.css';
 
-
 const Dashboard = () => {
     const [product, setProduct] = useState({
         id: '',
@@ -28,8 +27,8 @@ const Dashboard = () => {
             const responseData = JSON.parse(response.data.body);
             setProducts(responseData.data || []);
         } catch (error) {
-            setMessage('Error al cargar los productos');
             console.error("Error al obtener los productos:", error);
+            setMessage('Error al cargar los productos');
         }
     };
 
@@ -57,12 +56,12 @@ const Dashboard = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const imageUrl = await uploadImageToS3(product.imageFile);
-        if (!imageUrl) {
+        const imageUrl = product.imageFile ? await uploadImageToS3(product.imageFile) : product.image;
+        if (product.imageFile && !imageUrl) {
             setMessage('Error al subir la imagen');
             return;
         }
-
+    
         const productData = {
             id: product.id,
             name: product.name,
@@ -70,26 +69,46 @@ const Dashboard = () => {
             price: parseFloat(product.price),
             image: imageUrl
         };
-
+    
         try {
-            await axios.post('https://s6q9fdqw8l.execute-api.us-east-1.amazonaws.com/dev/products', productData, {
-                headers: { 'Content-Type': 'application/json' }
-            });
-            setMessage('Producto creado exitosamente');
+            if (selectedProduct) {
+                await axios.put(`https://s6q9fdqw8l.execute-api.us-east-1.amazonaws.com/dev/products/${product.id}`, productData, {
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                setMessage('Producto actualizado exitosamente');
+            } else {
+                await axios.post('https://s6q9fdqw8l.execute-api.us-east-1.amazonaws.com/dev/products', productData, {
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                setMessage('Producto creado exitosamente');
+            }
+            
             setProduct({ id: '', name: '', description: '', price: '', imageFile: null });
-            fetchProducts();
+            setSelectedProduct(null);
+            fetchProducts(); // Recargar productos después de crear/editar
             setShowModal(false);
         } catch (error) {
             setMessage(error.response ? `Error: ${error.response.data.message}` : 'Error de red o servidor');
             console.error("Error al enviar el producto:", error);
         }
     };
-
+    
     const handleShowModal = () => setShowModal(true);
-    const handleCloseModal = () => setShowModal(false);
+    const handleCloseModal = () => {
+        setShowModal(false);
+        setSelectedProduct(null); // Resetear el producto seleccionado al cerrar el modal
+        setProduct({ id: '', name: '', description: '', price: '', imageFile: null });
+    };
 
     const handleEdit = (prod) => {
-        setProduct(prod);
+        setProduct({
+            id: prod.id,
+            name: prod.name,
+            description: prod.description,
+            price: prod.price,
+            imageFile: null 
+        });
+        setSelectedProduct(prod.id);
         setShowModal(true);
     };
 
@@ -97,7 +116,10 @@ const Dashboard = () => {
         try {
             await axios.delete(`https://s6q9fdqw8l.execute-api.us-east-1.amazonaws.com/dev/products/${productId}`);
             setMessage('Producto eliminado exitosamente');
-            fetchProducts();
+            
+            // Eliminar el producto del estado local para actualizar la lista
+            setProducts(products.filter(prod => prod.id !== productId));
+            
         } catch (error) {
             setMessage('Error al eliminar el producto');
             console.error("Error al eliminar el producto:", error);
@@ -114,10 +136,10 @@ const Dashboard = () => {
             {message && <p className="message">{message}</p>}
             <Button variant="primary" onClick={handleShowModal}>Crear Producto</Button>
 
-            {/* Modal para crear producto */}
+            {/* Modal para crear/editar producto */}
             <Modal show={showModal} onHide={handleCloseModal}>
                 <Modal.Header closeButton>
-                    <Modal.Title>{product.id ? 'Editar Producto' : 'Crear Nuevo Producto'}</Modal.Title>
+                    <Modal.Title>{selectedProduct ? 'Editar Producto' : 'Crear Nuevo Producto'}</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
                     <form onSubmit={handleSubmit}>
@@ -139,7 +161,7 @@ const Dashboard = () => {
                         </div>
                         <div className="form-group">
                             <label>Imagen:</label>
-                            <input type="file" name="imageFile" onChange={handleChange} accept="image/*" required />
+                            <input type="file" name="imageFile" onChange={handleChange} accept="image/*" required={!selectedProduct} />
                         </div>
                         <Button type="submit" variant="success">Guardar Producto</Button>
                     </form>

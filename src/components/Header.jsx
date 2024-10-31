@@ -1,6 +1,6 @@
 // Header.jsx
-import React, { useContext, useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useContext, useState, useEffect, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import '../styles/Header.css';
 import { CartContext } from '../context/CartContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -9,28 +9,35 @@ import { faShoppingCart, faHeart, faChevronDown } from '@fortawesome/free-solid-
 function Header() {
     const { cartItems } = useContext(CartContext);
     const itemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
+    const navigate = useNavigate();
 
     // Estado para controlar la visibilidad del menú desplegable
     const [dropdownVisible, setDropdownVisible] = useState(false);
+    const dropdownRef = useRef(null);
 
-    // Alternar la visibilidad del menú desplegable
+    // Alternar visibilidad del menú desplegable al hacer clic en la flecha
     const toggleDropdown = () => {
         setDropdownVisible(!dropdownVisible);
     };
 
     // Cerrar el menú si se hace clic fuera de él
-    const closeDropdown = (e) => {
-        if (!e.target.closest('.user-profile')) {
-            setDropdownVisible(false);
-        }
-    };
-
     useEffect(() => {
-        document.addEventListener('click', closeDropdown);
+        const closeDropdownOnClickOutside = (e) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+                setDropdownVisible(false);
+            }
+        };
+
+        document.addEventListener('mousedown', closeDropdownOnClickOutside);
         return () => {
-            document.removeEventListener('click', closeDropdown);
+            document.removeEventListener('mousedown', closeDropdownOnClickOutside);
         };
     }, []);
+
+    // Redirigir a la página del carrito
+    const handleCartClick = () => {
+        navigate('/cart');
+    };
 
     return (
         <header className="header">
@@ -39,12 +46,9 @@ function Header() {
             </div>
             <nav className="navbar">
                 <ul>
-                    <li><Link to="/">Home</Link></li>
                     <li><Link to="/ecommerce">Catalog</Link></li>
                     <li><Link to="/dashboard">Dashboard</Link></li>
                     <li><Link to="/invoice">Invoice</Link></li>
-                    <li><Link to="/login">Login</Link></li>
-                    <li><Link to="/profile">Profile</Link></li>
                 </ul>
             </nav>
             <div className="user-section">
@@ -52,13 +56,14 @@ function Header() {
                     <FontAwesomeIcon icon={faHeart} />
                 </button>
 
-                <button className="icon-button cart-button">
+                {/* Icono del carrito con contador */}
+                <button className="icon-button cart-button" onClick={handleCartClick}>
                     <FontAwesomeIcon icon={faShoppingCart} />
                     {itemCount > 0 && <span className="cart-count">{itemCount}</span>}
                 </button>
 
-                {/* Avatar de Usuario y Nombre */}
-                <div className="user-profile" onClick={toggleDropdown}>
+                {/* Avatar de Usuario, Nombre y Flecha */}
+                <div className="user-profile" onClick={toggleDropdown} ref={dropdownRef}>
                     <img src="https://via.placeholder.com/32" alt="User Avatar" className="user-avatar" />
                     <div className="user-info">
                         <span className="greeting">Hola, Kitsune!</span>
@@ -66,11 +71,10 @@ function Header() {
                     <FontAwesomeIcon icon={faChevronDown} className="dropdown-arrow" />
                 </div>
 
-                {/* Menú desplegable */}
+                {/* Menú desplegable que solo aparece al hacer clic en la flecha */}
                 {dropdownVisible && (
                     <div className="dropdown-menu">
                         <Link to="/login" className="dropdown-item">Login</Link>
-                        <Link to="/profile" className="dropdown-item">Profile</Link>
                     </div>
                 )}
             </div>
