@@ -1,23 +1,23 @@
-const express = require('express');
-const app = express();
-const cors = require('cors');
-const RoutesCustomer = require('./routes/routesCustomer');
-const RoutesEmail = require('./routes/routesEmail');
+const express = require('express')
+const app = express()
+const bodyParser = require('body-parser');
+const RoutesCustomer = require('./routes/routesCustomer')
+const RoutesEmail = require('./routes/routesEmail')
+
 require('dotenv').config();
+const cors = require('cors');
 
-// Middlewares
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json())
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
-// Rutas
-app.use('/api/customers', RoutesCustomer);
-app.use('/api/email', RoutesEmail); // Rutas de email
+app.use('/api', RoutesCustomer);
+app.use('/api', RoutesEmail);
 
-// Configuración del puerto
-const PORT = process.env.PORT || 5002;
 
-// Iniciar el servidor
+const PORT = process.env.PORT || 5002
+
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`Server running on port ${PORT}`)
 });

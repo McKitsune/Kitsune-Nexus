@@ -33,7 +33,7 @@ const Invoice = () => {
             setShowModal(true);
             return;
         }
-
+    
         const invoiceData = {
             email: user.email,
             nombre: user.name,
@@ -48,24 +48,43 @@ const Invoice = () => {
             date: new Date().toLocaleDateString(),
             time: new Date().toLocaleTimeString()
         };
-
+    
         try {
+            // Log para revisar los datos que se envían al backend
+            console.log("Enviando factura con los siguientes datos:", invoiceData);
+    
             // Enviar la factura al backend para enviar el correo de confirmación
-            await axios.post('http://localhost:5002/api/email/send-confirmation', invoiceData);
-
+            const response = await axios.post('/api/email/send-confirmation', invoiceData);
+    
+            // Log para revisar la respuesta del backend
+            console.log("Respuesta del servidor:", response);
+    
             // Guardar la factura en localStorage
             const updatedInvoices = [...previousPurchases, invoiceData];
             localStorage.setItem('invoices', JSON.stringify(updatedInvoices));
             setPreviousPurchases(updatedInvoices);
-
+    
             clearCart();
             alert("Pago realizado con éxito y correo de confirmación enviado.");
         } catch (error) {
+            // Log detallado del error en caso de fallo
             console.error("Error al enviar la factura:", error);
+    
+            // Desglose del error para identificar el problema exacto
+            if (error.response) {
+                console.log("Error status:", error.response.status); // Código de estado HTTP
+                console.log("Error data:", error.response.data); // Respuesta del servidor
+                console.log("Error headers:", error.response.headers); // Headers de la respuesta
+            } else if (error.request) {
+                console.log("No hubo respuesta del servidor. Request:", error.request);
+            } else {
+                console.log("Error al configurar la solicitud:", error.message);
+            }
+    
             alert("Hubo un error al enviar el correo de confirmación.");
         }
     };
-
+    
     const handleCloseModal = () => setShowModal(false);
     
     const handlePrintInvoice = (invoice) => {

@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-unused-vars
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Modal, Button, Table } from 'react-bootstrap';
@@ -57,8 +58,7 @@ const Dashboard = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-    
-        // Cargar la URL de la imagen si es necesario
+
         let imageUrl = product.image;
         if (product.imageFile) {
             imageUrl = await uploadImageToS3(product.imageFile);
@@ -67,49 +67,26 @@ const Dashboard = () => {
                 return;
             }
         }
-    
+
         const productData = {
-            id: product.id,
+            id: product.id || Math.random().toString(36).substr(2, 9), // Genera un ID único si está vacío
             name: product.name,
             description: product.description,
             price: parseFloat(product.price),
-            stock: parseInt(product.quantity, 10),  // Cambiamos a `stock` para coincidir con el backend
+            stock: parseInt(product.quantity, 10),
             image: imageUrl
         };
-    
+
         try {
-            if (selectedProduct) {
-                // Actualización de producto existente
-                const response = await axios.put(`https://s6q9fdqw8l.execute-api.us-east-1.amazonaws.com/dev/products/${product.id}`, {
-                    body: JSON.stringify(productData)
-                }, {
-                    headers: { 'Content-Type': 'application/json' }
-                });
-    
-                if (response.status === 200) {
-                    setMessage('Producto actualizado exitosamente');
-                } else {
-                    setMessage('Error al actualizar el producto');
-                }
-            } else {
-                // Creación de nuevo producto
-                const response = await axios.post('https://s6q9fdqw8l.execute-api.us-east-1.amazonaws.com/dev/products', {
-                    body: JSON.stringify(productData)
-                }, {
-                    headers: { 'Content-Type': 'application/json' }
-                });
-    
-                if (response.status === 201) {
-                    setMessage('Producto creado exitosamente');
-                } else {
-                    setMessage('Error al crear el producto');
-                }
-            }
-    
-            // Resetear el formulario y recargar la lista de productos
+            const response = selectedProduct
+                ? await axios.put(`https://s6q9fdqw8l.execute-api.us-east-1.amazonaws.com/dev/products/${product.id}`, productData)
+                : await axios.post('https://s6q9fdqw8l.execute-api.us-east-1.amazonaws.com/dev/products', productData);
+            setMessage(response.status === 200 || response.status === 201 ? 'Producto guardado exitosamente' : 'Error al guardar el producto');
+            
+            // Restablece el formulario y actualiza la lista de productos
             setProduct({ id: '', name: '', description: '', price: '', quantity: 0, imageFile: null });
             setSelectedProduct(null);
-            fetchProducts();  // Refrescar la lista de productos
+            fetchProducts();
             setShowModal(false);
         } catch (error) {
             setMessage(error.response ? `Error: ${error.response.data.message}` : 'Error de red o servidor');
@@ -117,8 +94,6 @@ const Dashboard = () => {
         }
     };
     
-    
-
     const handleShowModal = () => setShowModal(true);
     const handleCloseModal = () => {
         setShowModal(false);
@@ -219,7 +194,7 @@ const Dashboard = () => {
                                     type="radio"
                                     name="selectedProduct"
                                     checked={selectedProduct === prod.id}
-                                    onChange={() => handleSelectProduct(prod.id)}
+                                    onChange={() => setSelectedProduct(prod.id)}
                                 />
                             </td>
                             <td>{prod.id}</td>
